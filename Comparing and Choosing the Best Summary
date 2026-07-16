@@ -1,0 +1,192 @@
+from groq import Groq
+
+
+def bullet_point_summary(client, text, num_points=5):
+    """
+    Summarize text into concise bullet points.
+
+    Args:
+        client (Groq): Groq client initialized with API key.
+        text (str): Input text to summarize.
+        num_points (int): Number of bullet points for the summary.
+
+    Returns:
+        str: Generated bullet-point style summary.
+    """
+    # Build prompt
+    prompt = f"Summarize the following text in {num_points} concise bullet points:\n\n{text}"
+
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a concise and clear summarizer."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        temperature=0.3,
+        max_completion_tokens=300
+    )
+
+    return response.choices[0].message.content
+
+
+def abstract_style_summary(client, text, sentence_count=5):
+    """
+    Summarize text in an academic abstract style.
+
+    Args:
+        client (Groq): Groq client initialized with API key.
+        text (str): Input text to summarize.
+        sentence_count (int): Number of sentences in the abstract.
+
+    Returns:
+        str: Generated abstract-style summary.
+    """
+    # Build prompt
+    prompt = f"Summarize the following text as a {sentence_count}-sentence abstract:\n\n{text}"
+
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a concise and clear summarizer."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        temperature=0.3,
+        max_completion_tokens=300
+    )
+
+    return response.choices[0].message.content
+
+
+def simple_english_summary(client, text, sentence_count=5):
+    """
+    Summarize text in simple English for a younger audience.
+
+    Args:
+        client (Groq): Groq client initialized with API key.
+        text (str): Input text to summarize.
+        sentence_count (int): Number of sentences in the summary.
+
+    Returns:
+        str: Generated simple-English style summary.
+    """
+    # Build prompt
+    prompt = (
+        f"Summarize the following text in simple English suitable for a 12-year-old, "
+        f"in {sentence_count} sentences:\n\n{text}"
+    )
+
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a kind teacher explaining things simply."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        temperature=0.3,
+        max_completion_tokens=300
+    )
+
+    return response.choices[0].message.content
+
+
+def extract_keywords(text):
+    """
+    Extract keywords from the given text.
+
+    Args:
+        text (str): Input text.
+
+    Returns:
+        set: Set of extracted keywords.
+    """
+    keywords = set()
+
+    for word in text.split():
+        word = word.lower().strip(".,!?")
+        if len(word) > 4:
+            keywords.add(word)
+
+    return keywords
+
+
+def best_summary_by_keywords(article, summaries):
+    """
+    Choose the best summary by measuring keyword overlap.
+    """
+    article_keywords = extract_keywords(article)
+
+    best_label = ""
+    best_summary = ""
+    best_score = -1
+
+    for label, summary in summaries.items():
+        summary_keywords = extract_keywords(summary)
+
+        overlap_count = len(article_keywords.intersection(summary_keywords))
+        score = overlap_count / (len(article_keywords) + 1)
+
+        print(f"Keyword overlap score for {label}: {score:.4f}")
+
+        if score > best_score:
+            best_label = label
+            best_summary = summary
+            best_score = score
+
+    return f"Best Summary (by keywords: {best_label}):\n{best_summary}"
+
+
+if __name__ == "__main__":
+    # Ask for API Key
+    api_key = input("Enter your Groq API key: ").strip()
+    client = Groq(api_key=api_key)
+
+    # Load input article
+    filepath = "article.txt"
+
+    with open(filepath, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # Generate summaries
+    bullet_summary = bullet_point_summary(client, content, num_points=5)
+    abstract_summary = abstract_style_summary(client, content, sentence_count=5)
+    simple_summary = simple_english_summary(client, content, sentence_count=5)
+
+    # Print summaries
+    print("\n--- Bullet-point Summary ---\n")
+    print(bullet_summary)
+
+    print("\n--- Abstract Summary ---\n")
+    print(abstract_summary)
+
+    print("\n--- Simple English Summary ---\n")
+    print(simple_summary)
+
+    # Store summaries
+    summaries = {
+        "Bullet Points": bullet_summary,
+        "Abstract": abstract_summary,
+        "Simple English": simple_summary,
+    }
+
+    # Choose best summary
+    final_summary = best_summary_by_keywords(content, summaries)
+
+    print("\nFinal Chosen Summary:\n")
+    print(final_summary)
