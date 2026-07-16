@@ -1,0 +1,87 @@
+import cv2
+import numpy as np
+import os
+
+
+def load_images_from_folder(folder, label, size=(16, 16)):
+    """
+    Reads all images in color from the given folder, resizes them,
+    flattens them into 1D vectors, and assigns the given label.
+
+    Parameters:
+        folder (str): Path to the folder containing images.
+        label (int): Label to assign to every image in this folder (0=cat, 1=dog).
+        size (tuple): Target size (width, height) to resize images to.
+
+    Returns:
+        images (list): List of flattened image vectors.
+        labels (list): List of labels corresponding to each image.
+    """
+    images = []
+    labels = []
+
+    for filename in os.listdir(folder):
+        img_path = os.path.join(folder, filename)
+
+        # Read image in color (BGR)
+        img = cv2.imread(img_path, cv2.IMREAD_COLOR)
+
+        # Skip files that couldn't be read (corrupt / non-image files)
+        if img is None:
+            continue
+
+        # Resize to target size
+        img_resized = cv2.resize(img, size)
+
+        # Flatten into a 1D vector
+        img_flattened = img_resized.flatten()
+
+        images.append(img_flattened)
+        labels.append(label)
+
+    return images, labels
+
+
+def prepare_dataset(base_path="dataset", size=(16, 16)):
+    """
+    Loads and prepares the full train/test dataset of cats and dogs.
+
+    Returns:
+        X_train, y_train, X_test, y_test (all as NumPy arrays)
+    """
+    print("Loading dataset...")
+
+    # ----- Training data -----
+    train_cats_path = os.path.join(base_path, "train", "cats")
+    train_dogs_path = os.path.join(base_path, "train", "dogs")
+
+    cat_images_train, cat_labels_train = load_images_from_folder(train_cats_path, label=0, size=size)
+    dog_images_train, dog_labels_train = load_images_from_folder(train_dogs_path, label=1, size=size)
+
+    X_train = np.array(cat_images_train + dog_images_train)
+    y_train = np.array(cat_labels_train + dog_labels_train)
+
+    # ----- Testing data -----
+    test_cats_path = os.path.join(base_path, "test", "cats")
+    test_dogs_path = os.path.join(base_path, "test", "dogs")
+
+    cat_images_test, cat_labels_test = load_images_from_folder(test_cats_path, label=0, size=size)
+    dog_images_test, dog_labels_test = load_images_from_folder(test_dogs_path, label=1, size=size)
+
+    X_test = np.array(cat_images_test + dog_images_test)
+    y_test = np.array(cat_labels_test + dog_labels_test)
+
+    print("Dataset ready!")
+    print(f"Train set shape: X={X_train.shape}, y={y_train.shape}")
+    print(f" - Cats: {len(cat_images_train)}")
+    print(f" - Dogs: {len(dog_images_train)}")
+    print()
+    print(f"Test set shape:  X={X_test.shape}, y={y_test.shape}")
+    print(f" - Cats: {len(cat_images_test)}")
+    print(f" - Dogs: {len(dog_images_test)}")
+
+    return X_train, y_train, X_test, y_test
+
+
+if __name__ == "__main__":
+    X_train, y_train, X_test, y_test = prepare_dataset(base_path="dataset", size=(16, 16))
